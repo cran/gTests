@@ -1,0 +1,10 @@
+a604a62eb57fb017eea8236621a714c5 *DESCRIPTION
+6786d030b9553e3375abd3c88c82e54d *NAMESPACE
+15c54c3d9327d1553a5e26c728aead04 *R/gTests.r
+e12ce64fdd8071b37bad61a9f4eec9c2 *data/example.rda
+e2a6eba4a01213c78860bbaf0160efad *man/E1.Rd
+fed5ac1f9518668e009779c791af2e2e *man/E2.Rd
+ee27e4a8b1e9539e22ee6eac5e4040fd *man/E3.Rd
+597a2163cc674db7f36ba3c1893255d4 *man/g.tests.Rd
+cbf7b6c733ca3c91be748d5ccd1cb63b *man/gTests-package.Rd
+5c9f05b05f5225cb0d6ef02b8d530e46 *man/getR1R2.Rd
