@@ -1,6 +1,5 @@
-
 ## main function
-g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
+g.tests = function(E, sample1ID, sample2ID, test.type="all", maxtype.kappa = 1.14, perm=0){
   temp = getR1R2(E, sample1ID)
   R1 = temp$R1
   R2 = temp$R2
@@ -25,7 +24,11 @@ g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
   V2 = nEi * m*(m-1)*(m-2)/N/(N-1)/(N-2) + (nE*(nE-1)-nEi) * m*(m-1)*(m-2)*(m-3)/N/(N-1)/(N-2)/(N-3) + mu2 - mu2^2
   V12 = (nE*(nE-1)-nEi) * m*n*(m-1)*(n-1)/N/(N-1)/(N-2)/(N-3) - mu1*mu2
   S = matrix(c(V1,V12,V12,V2), nrow=2)
-  if (is.na(match(test.type,c("all","original","o","generalized","g","weighted","w")))){
+  
+  Zw = ((m)*(R1-mu1)+(n)*(R2-mu2))/sqrt((m)^2*V1+(n)^2*V2+2*(m)*(n)*V12)
+  Zd = (R1-R2-(mu1-mu2))/sqrt(V1+V2-2*V12)
+  
+  if (is.na(match(test.type,c("all","original","o","generalized","g","weighted","w","maxtype","m")))){
     cat("Wrong test.type input! All tests are performed!\n")
     test.type="all"
   }
@@ -38,21 +41,30 @@ g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
     Sinv = solve(S)
     Rmv = c(R1-mu1, R2-mu2)
     Zg = Rmv %*% Sinv %*% Rmv
+	Zg = Zg[1]
     pg.approx = pchisq(Zg, df=2, lower.tail=F)
     rg = list(test.statistic=Zg, pval.approx=pg.approx)
   }
-  if (test.type=="all" || test.type=="weighted" || test.type=="w"){
-    Zw = ((m)*(R1-mu1)+(n)*(R2-mu2))/sqrt((m)^2*V1+(n)^2*V2+2*(m)*(n)*V12)
+  if (test.type=="all" || test.type=="weighted" || test.type=="w"){    
     pw.approx = pnorm(-Zw)
     rw = list(test.statistic=Zw, pval.approx=pw.approx)
   }
+  if (test.type=="all" || test.type=="maxtype" || test.type=="m"){
+		M = max(maxtype.kappa*Zw,abs(Zd))		
+		pm.approx = 1-pnorm(M/maxtype.kappa)*(2*pnorm(M)-1)		
+		rmax = list(test.statistic=M, pval.approx=pm.approx)
+  }
+  
   if (perm>0){
-    Zov = Zgv = Zwv = rep(0,perm)
+    Zov = Zgv = Zwv = Mv = rep(0,perm)
     for (k in 1:perm){
       g = sample(c(sample1ID, sample2ID), n)
       temp.p = getR1R2(E,g)
       R1.p = temp.p$R1
       R2.p = temp.p$R2
+	  Zwv[k] = ((m)*(R1.p-mu1)+(n)*(R2.p-mu2))/sqrt((m)^2*V1+(n)^2*V2+2*(m)*(n)*V12)
+	  Zd.p = (R1.p-R2.p-(mu1-mu2))/sqrt(V1+V2-2*V12)
+	  
       if (test.type=="all" || test.type=="original" || test.type=="o"){
         Zov[k] = (nE-R1.p-R2.p-mu0)/sqrt(V0)
       }
@@ -60,9 +72,9 @@ g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
         Rmv.p = c(R1.p-mu1, R2.p-mu2)
         Zgv[k] = Rmv.p %*% Sinv %*% Rmv.p
       }
-      if (test.type=="all" || test.type=="weighted" || test.type=="w"){
-        Zwv[k] = ((m)*(R1.p-mu1)+(n)*(R2.p-mu2))/sqrt((m)^2*V1+(n)^2*V2+2*(m)*(n)*V12)
-      }
+	  if (test.type=="all" || test.type=="maxtype" || test.type=="m"){
+		Mv[k] = max(maxtype.kappa*Zwv[k],abs(Zd.p))		
+	  }
     }
     if (test.type=="all" || test.type=="original" || test.type=="o"){
       po.perm = length(which(Zov<=Zo))/perm
@@ -76,6 +88,10 @@ g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
       pw.perm = length(which(Zwv>=Zw))/perm
       rw = c(rw, list(pval.perm=pw.perm))
     }
+	if (test.type=="all" || test.type=="maxtype" || test.type=="m"){
+      pm.perm = length(which(Mv>=M))/perm
+      rmax = c(rmax, list(pval.perm=pm.perm))
+    }
   }
   r = list()
   if (test.type=="all" || test.type=="original" || test.type=="o"){
@@ -86,6 +102,9 @@ g.tests = function(E, sample1ID, sample2ID, test.type="all", perm=0){
   }
   if (test.type=="all" || test.type=="weighted" || test.type=="w"){
     r = c(r,list(weighted=rw))
+  }
+  if (test.type=="all" || test.type=="maxtype" || test.type=="m"){
+		r = c(r,list(maxtype=rmax))
   }
   return(r)
 }
